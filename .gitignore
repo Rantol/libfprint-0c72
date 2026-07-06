@@ -1,0 +1,24 @@
+# Build artifacts
+builddir/
+build/
+_build/
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Compiled
+*.o
+*.so
+*.la
+*.a
+
+# Logs
+*.log

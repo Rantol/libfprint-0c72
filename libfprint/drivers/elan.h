@@ -48,7 +48,7 @@
 
 /* min and max frames in a capture */
 #define ELAN_MIN_FRAMES 7
-#define ELAN_MAX_FRAMES 30
+#define ELAN_MAX_FRAMES 50
 
 /* crop frames to this height to improve stitching */
 #define ELAN_MAX_FRAME_HEIGHT 50

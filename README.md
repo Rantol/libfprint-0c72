@@ -1,95 +1,57 @@
+# libfprint-0c72
 
+Patched libfprint for **ELAN 04f3:0c72** fingerprint sensor (Acer Swift 3, 2023).
 
-<div align="center">
+## Problem
 
-# LibFPrint
+The ELAN 0c72 is a tiny swipe sensor (150x52 pixels). The original libfprint uses Bozorth3 minutiae matching with threshold 24, which is too strict for such small images. This causes frequent authentication failures even with properly enrolled fingerprints.
 
-*LibFPrint is part of the **[FPrint][Website]** project.*
+## Solution
 
-<br/>
+Two patches to `libfprint/drivers/elan.c` and `elan.h`:
 
-[![Button Website]][Website]
-[![Button Documentation]][Documentation]
+| Parameter | Original | Patched | Purpose |
+|-----------|----------|---------|---------|
+| `bz3_threshold` | 24 | 12 | More lenient matching for small images |
+| `ELAN_MAX_FRAMES` | 30 | 50 | Capture more frames during swipe for larger assembled image |
 
-[![Button Supported]][Supported]
-[![Button Unsupported]][Unsupported]
+## Quick Install
 
-[![Button Contribute]][Contribute]
-[![Button Contributors]][Contributors]
+```bash
+sudo ./install.sh
+```
 
-</div>
+## Manual Install
 
-## History
+```bash
+# Install dependencies (Debian/Ubuntu)
+sudo apt install build-essential meson ninja-build python3-dev libglib2.0-dev libusb-1.0-0-dev libgusb-dev libudev-dev
 
-**LibFPrint** was originally developed as part of an
-academic project at the **[University Of Manchester]**.
+# Build
+meson setup builddir
+ninja -C builddir
 
-It aimed to hide the differences between consumer
-fingerprint scanners and provide a single uniform
-API to application developers.
+# Install
+sudo ninja -C builddir install
+sudo ldconfig
+sudo systemctl restart fprintd
+```
 
-## Goal
+## Test
 
-The ultimate goal of the **FPrint** project is to make
-fingerprint scanners widely and easily usable under
-common Linux environments.
+```bash
+fprintd-enroll
+fprintd-verify
+```
 
-## License
+## Device Info
 
-`Section 6` of the license states that for compiled works that use
-this library, such works must include **LibFPrint** copyright notices
-alongside the copyright notices for the other parts of the work.
+- **Sensor**: ELAN 04f3:0c72
+- **Type**: Swipe (150x52 px)
+- **Protocol**: Old ELAN (no MOC2 - no EP 0x84)
+- **Laptop**: Acer Swift 3 SF314-43 (2023)
 
-**LibFPrint** includes code from **NIST's** **[NBIS]** software distribution.
+## Based On
 
-We include **Bozorth3** from the **[US Export Controlled]**
-distribution, which we have determined to be fine
-being shipped in an open source project.
-
-## Get in *touch*
-
- - [IRC] - `#fprint` @ `irc.oftc.net`
- - [Matrix] - `#fprint:matrix.org` bridged to the IRC channel
- - [MailingList] - low traffic, not much used these days
-
-<br/>
-
-<div align="right">
-
-[![Badge License]][License]
-
-</div>
-
-
-<!----------------------------------------------------------------------------->
-
-[Documentation]: https://fprint.freedesktop.org/libfprint-dev/
-[Contributors]: https://gitlab.freedesktop.org/libfprint/libfprint/-/graphs/master
-[Unsupported]: https://gitlab.freedesktop.org/libfprint/wiki/-/wikis/Unsupported-Devices
-[Supported]: https://fprint.freedesktop.org/supported-devices.html
-[Website]: https://fprint.freedesktop.org/
-[MailingList]: https://lists.freedesktop.org/mailman/listinfo/fprint
-[IRC]: ircs://irc.oftc.net:6697/#fprint
-[Matrix]: https://matrix.to/#/#fprint:matrix.org
-
-[Contribute]: ./HACKING.md
-[License]: ./COPYING
-
-[University Of Manchester]: https://www.manchester.ac.uk/
-[US Export Controlled]: https://fprint.freedesktop.org/us-export-control.html
-[NBIS]: http://fingerprint.nist.gov/NBIS/index.html
-
-
-<!---------------------------------[ Badges ]---------------------------------->
-
-[Badge License]: https://img.shields.io/badge/License-LGPL2.1-015d93.svg?style=for-the-badge&labelColor=blue
-
-
-<!---------------------------------[ Buttons ]--------------------------------->
-
-[Button Documentation]: https://img.shields.io/badge/Documentation-04ACE6?style=for-the-badge&logoColor=white&logo=BookStack
-[Button Contributors]: https://img.shields.io/badge/Contributors-FF4F8B?style=for-the-badge&logoColor=white&logo=ActiGraph
-[Button Unsupported]: https://img.shields.io/badge/Unsupported_Devices-EF2D5E?style=for-the-badge&logoColor=white&logo=AdBlock
-[Button Contribute]: https://img.shields.io/badge/Contribute-66459B?style=for-the-badge&logoColor=white&logo=Git
-[Button Supported]: https://img.shields.io/badge/Supported_Devices-428813?style=for-the-badge&logoColor=white&logo=AdGuard
-[Button Website]: https://img.shields.io/badge/Homepage-3B80AE?style=for-the-badge&logoColor=white&logo=freedesktopDotOrg
+- [SilverCondor18/libfprint](https://github.com/SilverCondor18/libfprint) - adds 0c72 to device table
+- Original libfprint from freedesktop.org
