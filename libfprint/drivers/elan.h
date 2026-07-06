@@ -47,7 +47,7 @@
 #define ELAN_CALIBRATION_ATTEMPTS 10
 
 /* min and max frames in a capture */
-#define ELAN_MIN_FRAMES 7
+#define ELAN_MIN_FRAMES 5
 #define ELAN_MAX_FRAMES 50
 
 /* crop frames to this height to improve stitching */
@@ -67,8 +67,8 @@
 
 /* usual command timeout and timeout for when we need to check if the finger is
  * still on the device */
-#define ELAN_CMD_TIMEOUT 10000
-#define ELAN_FINGER_TIMEOUT 200
+#define ELAN_CMD_TIMEOUT 15000
+#define ELAN_FINGER_TIMEOUT 1000
 
 G_DECLARE_FINAL_TYPE (FpiDeviceElan, fpi_device_elan, FPI, DEVICE_ELAN,
                       FpImageDevice);

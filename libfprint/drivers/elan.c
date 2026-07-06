@@ -577,6 +577,9 @@ capture_run_state (FpiSsm *ssm, FpDevice *dev)
     }
 }
 
+static int capture_retries = 0;
+#define ELAN_CAPTURE_RETRIES 3
+
 static void
 capture_complete (FpiSsm *ssm, FpDevice *_dev, GError *error)
 {
@@ -590,6 +593,7 @@ capture_complete (FpiSsm *ssm, FpDevice *_dev, GError *error)
       (g_error_matches (error, G_USB_DEVICE_ERROR, G_USB_DEVICE_ERROR_TIMED_OUT) &&
        fpi_ssm_get_cur_state (ssm) == CAPTURE_WAIT_FINGER))
     {
+      capture_retries = 0;
       if (self->num_frames >= ELAN_MIN_FRAMES)
         {
           elan_submit_image (dev);
@@ -602,8 +606,20 @@ capture_complete (FpiSsm *ssm, FpDevice *_dev, GError *error)
         }
       g_clear_error (&error);
     }
+  else if (error && capture_retries < ELAN_CAPTURE_RETRIES)
+    {
+      /* retry on USB errors — device may need a moment to recover */
+      capture_retries++;
+      fp_dbg ("capture USB error, retry %d/%d: %s",
+              capture_retries, ELAN_CAPTURE_RETRIES, error->message);
+      g_clear_error (&error);
+      g_usleep (50000);
+      elan_capture (self);
+      return;
+    }
   else
     {
+      capture_retries = 0;
       fpi_image_device_session_error (dev, error);
     }
 
@@ -770,19 +786,42 @@ calibrate_run_state (FpiSsm *ssm, FpDevice *dev)
     }
 }
 
+static int calibrate_retries = 0;
+#define ELAN_CALIBRATE_RETRIES 3
+
 static void
 calibrate_complete (FpiSsm *ssm, FpDevice *dev, GError *error)
 {
+  FpiDeviceElan *self = FPI_DEVICE_ELAN (dev);
+
   G_DEBUG_HERE ();
 
   if (error)
     {
+      if (calibrate_retries < ELAN_CALIBRATE_RETRIES)
+        {
+          calibrate_retries++;
+          fp_dbg ("calibrate error, retry %d/%d: %s",
+                  calibrate_retries, ELAN_CALIBRATE_RETRIES, error->message);
+          g_clear_error (&error);
+          g_usleep (100000);
+          /* restart calibration SSM directly (active is still TRUE) */
+          elan_dev_reset_state (self);
+          self->calib_atts_left = ELAN_CALIBRATION_ATTEMPTS;
+          FpiSsm *new_ssm = fpi_ssm_new (dev, calibrate_run_state,
+                                          CALIBRATE_NUM_STATES);
+          fpi_ssm_start (new_ssm, calibrate_complete);
+          return;
+        }
+      calibrate_retries = 0;
       fpi_image_device_session_error (FP_IMAGE_DEVICE (dev), error);
-      elan_stop_capture (FPI_DEVICE_ELAN (dev));
+      elan_stop_capture (self);
     }
   else
     {
-      elan_capture (FPI_DEVICE_ELAN (dev));
+      calibrate_retries = 0;
+      g_usleep (50000);
+      elan_capture (self);
     }
 }
 
