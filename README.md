@@ -72,6 +72,23 @@ For system authentication (sudo, login) to work with fingerprint, ensure `/etc/p
 auth    [success=2 default=ignore]    pam_fprintd.so max-tries=3 timeout=30
 ```
 
+Or run `sudo ./fix-pam.sh` to apply it automatically.
+
+## Troubleshooting
+
+**`enroll-disconnected` during enrollment** — fixed by the stop-command patch above; make sure you are running the patched library (rebuild + `sudo ninja -C builddir install && sudo ldconfig && sudo systemctl restart fprintd`).
+
+**`Device was already claimed`** — another process holds the sensor. Close the GNOME Settings fingerprint page (or any other enrollment UI) before using `fprintd-enroll` from the terminal.
+
+**Debugging** — stop the daemon and run it in the foreground with verbose logs:
+
+```bash
+sudo systemctl stop fprintd
+sudo G_MESSAGES_DEBUG=all /usr/libexec/fprintd -t
+```
+
+Then run `fprintd-enroll` in another terminal. Match scores appear as `score N/6` lines; USB retries as `capture USB error, retry ...`.
+
 ## Quick Install
 
 ```bash
