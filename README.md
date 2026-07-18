@@ -21,6 +21,11 @@ Patches to `libfprint/drivers/elan.c` and `elan.h`:
 | `ELAN_FINGER_TIMEOUT` | 200 | 1000 | More time between frames during capture |
 | Capture retries | 0 | 3 | Retry on USB errors with 50ms delay |
 | Calibrate retries | 0 | 3 | Retry on calibration USB errors with 100ms delay |
+| `IMG_ENROLL_STAGES` | 5 | 8 | More samples per template — tolerates imperfect swipes during verify |
+| Stop-cmd error handling | session error | ignored | A failed post-stage stop command no longer aborts enrollment (was reported as `enroll-disconnected`) |
+| Pre-calibration delay | 0 | 150ms | Let the sensor settle after stop command before recalibrating |
+
+Note: `IMG_ENROLL_STAGES` lives in `libfprint/fp-image-device-private.h` (affects all image drivers), the rest is in `libfprint/drivers/elan.c` / `elan.h`.
 
 ## Important: Power Management
 
@@ -38,6 +43,16 @@ for d in /sys/bus/usb/devices/*/idVendor; do
     [ "$vid" = "04f3" ] && echo on > "$(dirname "$d")/power/control" 2>/dev/null
 done
 ```
+
+## Important: Protect From apt Upgrades
+
+The patched library overwrites `/usr/lib/.../libfprint-2.so.2.0.0`, which is owned by the `libfprint-2-2` package. A regular system upgrade will silently replace it with the stock library and all the problems will return. Prevent that:
+
+```bash
+sudo apt-mark hold libfprint-2-2
+```
+
+(Or use `dpkg-divert` if you prefer apt to keep updating the package itself.) When a new upstream libfprint version arrives, rebase the patches, rebuild, reinstall, then `apt-mark unhold` → upgrade → re-hold.
 
 ## Important: Re-enroll After Update
 

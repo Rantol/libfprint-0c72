@@ -494,11 +494,17 @@ stop_capture_complete (FpiSsm *ssm, FpDevice *_dev, GError *error)
       return;
     }
 
-  if (!error)
-    fpi_image_device_report_finger_status (dev, FALSE);
-  else
-    /* NOTE: We cannot get a cancellation error here. */
-    fpi_image_device_session_error (dev, error);
+  if (error)
+    {
+      /* A failed stop command must not kill the whole session: the next
+       * AWAIT_FINGER_ON triggers a full calibrate which resets the sensor
+       * state anyway. Reporting session_error here is what fprintd shows
+       * as "enroll-disconnected" between stages. */
+      fp_dbg ("stop capture failed, ignoring: %s", error->message);
+      g_clear_error (&error);
+    }
+
+  fpi_image_device_report_finger_status (dev, FALSE);
 }
 
 static void
@@ -1003,7 +1009,12 @@ dev_change_state (FpImageDevice *dev, FpiImageDeviceState state)
    * devices to end up in a bad state.
    */
   if (state == FPI_IMAGE_DEVICE_STATE_AWAIT_FINGER_ON)
-    elan_calibrate (self);
+    {
+      /* 0c72 on 6.12+ kernels can drop off the bus if calibration starts
+       * immediately after the previous stage's stop command */
+      g_usleep (150000);
+      elan_calibrate (self);
+    }
 }
 
 static void

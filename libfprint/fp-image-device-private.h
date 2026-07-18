@@ -21,7 +21,7 @@
 
 #include "fpi-image-device.h"
 
-#define IMG_ENROLL_STAGES 5
+#define IMG_ENROLL_STAGES 8
 
 typedef struct
 {
